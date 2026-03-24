@@ -1,4 +1,8 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+BookingStatus = Literal["Confirmed", "Cancelled"]
 
 
 class BookingCreate(BaseModel):
@@ -6,7 +10,7 @@ class BookingCreate(BaseModel):
     trainer_id: int
     session_date: str
     session_time: str
-    booking_status: str = Field(default="Confirmed")
+    booking_status: BookingStatus = Field(default="Confirmed")
 
 
 class BookingUpdate(BaseModel):
@@ -14,7 +18,7 @@ class BookingUpdate(BaseModel):
     trainer_id: int
     session_date: str
     session_time: str
-    booking_status: str
+    booking_status: BookingStatus
 
 
 class Booking(BaseModel):
@@ -23,4 +27,4 @@ class Booking(BaseModel):
     trainer_id: int
     session_date: str
     session_time: str
-    booking_status: str
+    booking_status: BookingStatus
