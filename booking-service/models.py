@@ -1,15 +1,26 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
-class BookingBase(BaseModel):
-    member_id: str
-    trainer_id: str
-    starts_at: str
+class BookingCreate(BaseModel):
+    member_id: int
+    trainer_id: int
+    session_date: str
+    session_time: str
+    booking_status: str = Field(default="Confirmed")
 
 
-class BookingCreate(BookingBase):
-    pass
+class BookingUpdate(BaseModel):
+    member_id: int
+    trainer_id: int
+    session_date: str
+    session_time: str
+    booking_status: str
 
 
-class Booking(BookingBase):
-    id: str
+class Booking(BaseModel):
+    booking_id: int
+    member_id: int
+    trainer_id: int
+    session_date: str
+    session_time: str
+    booking_status: str
