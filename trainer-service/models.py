@@ -1,10 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class TrainerBase(BaseModel):
-    email: str
-    full_name: str = Field(..., min_length=1)
-    specialties: list[str] = []
+    name: str
+    specialty: str
+    phone: str
+    availability: str
 
 
 class TrainerCreate(TrainerBase):
@@ -12,4 +13,4 @@ class TrainerCreate(TrainerBase):
 
 
 class Trainer(TrainerBase):
-    id: str
+    trainer_id: str
