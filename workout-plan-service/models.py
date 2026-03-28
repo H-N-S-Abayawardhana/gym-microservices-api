@@ -1,9 +1,15 @@
-from pydantic import BaseModel, Field
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class WorkoutPlanBase(BaseModel):
-    name: str = Field(..., min_length=1)
-    member_id: str
+    member_id: int
+    trainer_id: int
+    goal: str
+    duration_weeks: int
+    difficulty_level: str
+    notes: Optional[str] = None
 
 
 class WorkoutPlanCreate(WorkoutPlanBase):
@@ -11,4 +17,4 @@ class WorkoutPlanCreate(WorkoutPlanBase):
 
 
 class WorkoutPlan(WorkoutPlanBase):
-    id: str
+    plan_id: int
