@@ -4,7 +4,7 @@ import httpx
 from fastapi import FastAPI, Response
 from pydantic import BaseModel
 
-ATTENDANCE_SERVICE = "http://localhost:8006"
+ATTENDANCE_SERVICE = "http://localhost:8014"
 ATTENDANCE_BASE = f"{ATTENDANCE_SERVICE}/attendance"
 
 app = FastAPI(title="API Gateway", version="1.0.0")
@@ -75,4 +75,4 @@ async def forward_delete(attendance_id: int):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("gateway:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("gateway:app", host="0.0.0.0", port=8010, reload=True)

@@ -6,10 +6,10 @@ FastAPI microservice for managing gym attendance records using in-memory storage
 
 ```
 attendance-service/
-├─ main.py           # FastAPI app entrypoint (runs on port 8006)
+├─ main.py           # FastAPI app entrypoint (runs on port 8014)
 ├─ routes.py         # Attendance CRUD routes (in-memory store)
 ├─ models.py         # Pydantic models & validation
-├─ gateway.py        # Simple API gateway (forwards /attendance to service, port 8000)
+├─ gateway.py        # Simple API gateway (forwards /attendance to service, port 8010)
 ├─ requirements.txt  # Python dependencies
 ```
 
@@ -25,7 +25,7 @@ attendance-service/
 
 ## API Endpoints (Attendance Service)
 
-Base path: `http://localhost:8006`
+Base path: `http://localhost:8014`
 
 - `GET /attendance` — list all records
 - `GET /attendance/{attendance_id}` — fetch one
@@ -49,8 +49,8 @@ Base path: `http://localhost:8006`
 
 ## API Gateway
 
-- Runs on `http://localhost:8000`
-- Forwards `/attendance` routes to `http://localhost:8006/attendance`
+- Runs on `http://localhost:8010`
+- Forwards `/attendance` routes to `http://localhost:8014/attendance`
 - Endpoints mirror the attendance service (GET/POST/PUT/DELETE, plus `GET /health`).
 - Uses a Pydantic `Attendance` model on POST/PUT so Swagger shows the JSON request body schema.
 
@@ -62,22 +62,22 @@ Base path: `http://localhost:8006`
 pip install -r requirements.txt
 ```
 
-2. Start Attendance Service (port 8006)
+2. Start Attendance Service (port 8014)
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8006 --reload
+uvicorn main:app --host 0.0.0.0 --port 8014 --reload
 ```
 
-3. Start API Gateway (port 8000)
+3. Start API Gateway (port 8010)
 
 ```bash
-uvicorn gateway:app --host 0.0.0.0 --port 8000 --reload
+uvicorn gateway:app --host 0.0.0.0 --port 8010 --reload
 ```
 
 ## Swagger / Docs
 
-- Attendance Service docs: `http://localhost:8006/docs`
-- Gateway docs: `http://localhost:8000/docs`
+- Attendance Service docs: `http://localhost:8014/docs`
+- Gateway docs: `http://localhost:8010/docs`
 
 ## Notes on Integration with Other Services
 
@@ -86,5 +86,5 @@ uvicorn gateway:app --host 0.0.0.0 --port 8000 --reload
 
 ## Health Checks
 
-- Service: `GET /health` (port 8006)
-- Gateway: `GET /health` (port 8000)
+- Service: `GET /health` (port 8014)
+- Gateway: `GET /health` (port 8010)
