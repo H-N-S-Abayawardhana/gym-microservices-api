@@ -4,7 +4,7 @@ import httpx
 from fastapi import APIRouter, Request, Response
 
 BOOKING_SERVICE_URL = os.environ.get(
-    "BOOKING_SERVICE_URL", "http://127.0.0.1:8010"
+    "BOOKING_SERVICE_URL", "http://127.0.0.1:8011"
 ).rstrip("/")
 
 router = APIRouter()
