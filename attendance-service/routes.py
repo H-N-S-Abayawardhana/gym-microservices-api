@@ -7,8 +7,12 @@ from models import Attendance, AttendanceCreate
 
 router = APIRouter()
 
+# In-memory storage
+attendance_db: list[AttendanceResponse] = []
+attendance_counter: int = 1
 
-@router.get("/")
+
+@router.get("/", response_model=list[AttendanceResponse])
 def list_attendance():
     with get_conn() as conn:
         with conn.cursor() as cur:
