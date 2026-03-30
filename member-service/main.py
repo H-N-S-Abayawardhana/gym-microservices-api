@@ -1,9 +1,15 @@
 from fastapi import FastAPI
+from db import init_db
 from routes import router
 
 app = FastAPI(title="Member Service")
 
 app.include_router(router, prefix="/members", tags=["Members"])
+
+
+@app.on_event("startup")
+def startup():
+    init_db()
 
 
 @app.get("/")

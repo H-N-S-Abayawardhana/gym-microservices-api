@@ -1,8 +1,9 @@
-from typing import Dict
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+
+from db import get_conn
 
 router = APIRouter()
 
@@ -19,44 +20,107 @@ class DietPlan(DietPlanCreate):
     diet_plan_id: str
 
 
-DIET_PLANS: Dict[str, DietPlan] = {}
-
-
-def _get_or_404(diet_plan_id: str) -> DietPlan:
-    plan = DIET_PLANS.get(diet_plan_id)
-    if not plan:
-        raise HTTPException(status_code=404, detail="Diet plan not found")
-    return plan
-
-
 @router.get("/")
 def list_diet_plans() -> dict:
-    return {"items": list(DIET_PLANS.values())}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT diet_plan_id, member_id, trainer_id, goal, meal_plan, duration_weeks
+                FROM diet_plans
+                ORDER BY diet_plan_id;
+                """
+            )
+            rows = cur.fetchall()
+    return {"items": [DietPlan(**row) for row in rows]}
 
 
 @router.get("/{diet_plan_id}")
 def get_diet_plan(diet_plan_id: str) -> dict:
-    return {"item": _get_or_404(diet_plan_id)}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT diet_plan_id, member_id, trainer_id, goal, meal_plan, duration_weeks
+                FROM diet_plans
+                WHERE diet_plan_id = %s;
+                """,
+                (diet_plan_id,),
+            )
+            row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Diet plan not found")
+    return {"item": DietPlan(**row)}
 
 
 @router.post("/")
 def create_diet_plan(payload: DietPlanCreate) -> dict:
     diet_plan_id = str(uuid4())
-    plan = DietPlan(diet_plan_id=diet_plan_id, **payload.model_dump())
-    DIET_PLANS[diet_plan_id] = plan
-    return {"item": plan}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO diet_plans (
+                    diet_plan_id, member_id, trainer_id, goal, meal_plan, duration_weeks
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING diet_plan_id, member_id, trainer_id, goal, meal_plan, duration_weeks;
+                """,
+                (
+                    diet_plan_id,
+                    payload.member_id,
+                    payload.trainer_id,
+                    payload.goal,
+                    payload.meal_plan,
+                    payload.duration_weeks,
+                ),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    return {"item": DietPlan(**row)}
 
 
 @router.put("/{diet_plan_id}")
 def update_diet_plan(diet_plan_id: str, payload: DietPlanCreate) -> dict:
-    _get_or_404(diet_plan_id)  # validate existence
-    updated = DietPlan(diet_plan_id=diet_plan_id, **payload.model_dump())
-    DIET_PLANS[diet_plan_id] = updated
-    return {"item": updated}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE diet_plans
+                SET member_id = %s,
+                    trainer_id = %s,
+                    goal = %s,
+                    meal_plan = %s,
+                    duration_weeks = %s
+                WHERE diet_plan_id = %s
+                RETURNING diet_plan_id, member_id, trainer_id, goal, meal_plan, duration_weeks;
+                """,
+                (
+                    payload.member_id,
+                    payload.trainer_id,
+                    payload.goal,
+                    payload.meal_plan,
+                    payload.duration_weeks,
+                    diet_plan_id,
+                ),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    if not row:
+        raise HTTPException(status_code=404, detail="Diet plan not found")
+    return {"item": DietPlan(**row)}
 
 
 @router.delete("/{diet_plan_id}")
 def delete_diet_plan(diet_plan_id: str) -> dict:
-    _get_or_404(diet_plan_id)  # validate existence
-    del DIET_PLANS[diet_plan_id]
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM diet_plans WHERE diet_plan_id = %s RETURNING diet_plan_id;",
+                (diet_plan_id,),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    if not row:
+        raise HTTPException(status_code=404, detail="Diet plan not found")
     return {"deleted": diet_plan_id}

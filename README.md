@@ -17,7 +17,7 @@ Optional: create a virtual environment per service or one at the repo root so de
 
 | Service | Port | Responsibility | Main API prefix (direct service) |
 |--------|------|----------------|----------------------------------|
-| **api-gateway** | `8010` | Single entry URL; proxies **bookings** to the booking service; other paths are in-process stubs for now | `/members`, `/trainers`, `/workouts`, `/bookings`, `/diet`, `/attendance` |
+| **api-gateway** | `8010` | Single entry URL; proxies requests to all domain microservices | `/members`, `/trainers`, `/workout-plans`, `/bookings`, `/diet-plans`, `/attendance` |
 | **booking-service** | `8011` | Session bookings (in-memory MVP) | `/bookings` |
 | **trainer-service** | `8012` | Trainers CRUD (in-memory) | `/trainers` |
 | **workout-plan-service** | `8013` | Workout plans CRUD (in-memory) | `/workout-plans` |
@@ -142,13 +142,41 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8010
 
 ---
 
+## PostgreSQL setup (all microservices)
+
+All six domain services now use PostgreSQL via `DATABASE_URL`.
+
+**Fallback:** Each service’s `db.py` loads `DATABASE_URL` from a **`.env`** file in that service folder (e.g. `booking-service/.env`) if the shell variable is not set. Priority: shell env first, then `.env`.
+
+You can set the URL in each terminal **before** starting a domain service:
+
+```powershell
+$env:DATABASE_URL = "postgresql://neondb_owner:...@ep-dark-poetry-amhgpm3s-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+```
+
+Create tables once using:
+
+```powershell
+psql "postgresql://neondb_owner:...@ep-dark-poetry-amhgpm3s-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require" -f database/schema.sql
+```
+
+`database/schema.sql` contains all service-owned tables.
+
+---
+
 ## Typical local setup
 
-1. Start **booking-service** on `8011`.  
-2. Start **api-gateway** on `8010` (defaults already point at `http://127.0.0.1:8011`).  
-3. Call bookings through the gateway, e.g. `GET http://127.0.0.1:8010/bookings`, which forwards to the booking service.
+1. Start all six microservices (`8011` to `8016`).  
+2. Start **api-gateway** on `8010`.  
+3. Call endpoints through the gateway, e.g. `GET http://127.0.0.1:8010/bookings`, `GET http://127.0.0.1:8010/members`, `GET http://127.0.0.1:8010/workout-plans`.
 
-Other microservices can be run on their ports when you call them **directly**; the gateway’s `/members`, `/trainers`, `/workouts`, `/diet`, and `/attendance` routes are placeholders until wired to those services.
+The gateway routes now forward to downstream services:
+- `/bookings` -> booking-service (`8011`)
+- `/trainers` -> trainer-service (`8012`)
+- `/workout-plans` -> workout-plan-service (`8013`)
+- `/attendance` -> attendance-service (`8014`)
+- `/diet-plans` -> diet-plan-service (`8015`)
+- `/members` -> member-service (`8016`)
 
 ---
 
