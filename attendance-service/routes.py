@@ -1,8 +1,94 @@
-from fastapi import APIRouter
+from uuid import uuid4
+
+from fastapi import APIRouter, HTTPException
+
+from db import get_conn
+from models import Attendance, AttendanceCreate
 
 router = APIRouter()
 
 
 @router.get("/")
 def list_attendance():
-    return {"items": []}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, member_id, checked_in_at
+                FROM attendance
+                ORDER BY checked_in_at DESC;
+                """
+            )
+            rows = cur.fetchall()
+    return {"items": [Attendance(**row) for row in rows]}
+
+
+@router.get("/{attendance_id}")
+def get_attendance(attendance_id: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, member_id, checked_in_at
+                FROM attendance
+                WHERE id = %s;
+                """,
+                (attendance_id,),
+            )
+            row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    return {"item": Attendance(**row)}
+
+
+@router.post("/")
+def create_attendance(payload: AttendanceCreate):
+    attendance_id = str(uuid4())
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO attendance (id, member_id, checked_in_at)
+                VALUES (%s, %s, %s)
+                RETURNING id, member_id, checked_in_at;
+                """,
+                (attendance_id, payload.member_id, payload.checked_in_at),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    return {"item": Attendance(**row)}
+
+
+@router.put("/{attendance_id}")
+def update_attendance(attendance_id: str, payload: AttendanceCreate):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE attendance
+                SET member_id = %s, checked_in_at = %s
+                WHERE id = %s
+                RETURNING id, member_id, checked_in_at;
+                """,
+                (payload.member_id, payload.checked_in_at, attendance_id),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    if not row:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    return {"item": Attendance(**row)}
+
+
+@router.delete("/{attendance_id}")
+def delete_attendance(attendance_id: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM attendance WHERE id = %s RETURNING id;",
+                (attendance_id,),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    if not row:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    return {"deleted": attendance_id}

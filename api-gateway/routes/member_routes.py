@@ -1,47 +1,17 @@
-from fastapi import APIRouter, HTTPException
-import httpx
+from fastapi import APIRouter, Request
+
+from .proxy_utils import proxy_request, service_url
 
 router = APIRouter()
 
-MEMBER_SERVICE_URL = "http://127.0.0.1:8016"
+MEMBER_SERVICE_URL = service_url("MEMBER_SERVICE_URL", "http://127.0.0.1:8016")
 
 
-@router.get("/")
-async def get_members():
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{MEMBER_SERVICE_URL}/members/")
-        return response.json()
+@router.api_route("", methods=["GET", "POST"], include_in_schema=True)
+async def members_collection(request: Request):
+    return await proxy_request(request, MEMBER_SERVICE_URL, "/members")
 
 
-@router.get("/{member_id}")
-async def get_member(member_id: int):
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{MEMBER_SERVICE_URL}/members/{member_id}")
-        if response.status_code == 404:
-            raise HTTPException(status_code=404, detail="Member not found")
-        return response.json()
-
-
-@router.post("/")
-async def create_member(member: dict):
-    async with httpx.AsyncClient() as client:
-        response = await client.post(f"{MEMBER_SERVICE_URL}/members/", json=member)
-        return response.json()
-
-
-@router.put("/{member_id}")
-async def update_member(member_id: int, member: dict):
-    async with httpx.AsyncClient() as client:
-        response = await client.put(f"{MEMBER_SERVICE_URL}/members/{member_id}", json=member)
-        if response.status_code == 404:
-            raise HTTPException(status_code=404, detail="Member not found")
-        return response.json()
-
-
-@router.delete("/{member_id}")
-async def delete_member(member_id: int):
-    async with httpx.AsyncClient() as client:
-        response = await client.delete(f"{MEMBER_SERVICE_URL}/members/{member_id}")
-        if response.status_code == 404:
-            raise HTTPException(status_code=404, detail="Member not found")
-        return response.json()
+@router.api_route("/{member_id}", methods=["GET", "PUT", "DELETE"], include_in_schema=True)
+async def member_by_id(member_id: int, request: Request):
+    return await proxy_request(request, MEMBER_SERVICE_URL, f"/members/{member_id}")

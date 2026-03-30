@@ -1,47 +1,107 @@
 from fastapi import APIRouter, HTTPException
 import uuid
+from db import get_conn
 from models import Trainer, TrainerCreate
 
 router = APIRouter()
 
-trainers = []
-
 
 @router.get("/")
 def list_trainers():
-    return {"items": trainers}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT trainer_id, name, specialty, phone, availability
+                FROM trainers
+                ORDER BY name;
+                """
+            )
+            rows = cur.fetchall()
+    return {"items": [Trainer(**row) for row in rows]}
 
 
 @router.get("/{trainer_id}")
 def get_trainer(trainer_id: str):
-    for trainer in trainers:
-        if trainer.trainer_id == trainer_id:
-            return trainer
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT trainer_id, name, specialty, phone, availability
+                FROM trainers
+                WHERE trainer_id = %s;
+                """,
+                (trainer_id,),
+            )
+            row = cur.fetchone()
+    if row:
+        return Trainer(**row)
     raise HTTPException(status_code=404, detail="Trainer not found")
 
 
 @router.post("/")
 def create_trainer(trainer: TrainerCreate):
     trainer_id = str(uuid.uuid4())
-    new_trainer = Trainer(trainer_id=trainer_id, **trainer.dict())
-    trainers.append(new_trainer)
-    return new_trainer
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO trainers (trainer_id, name, specialty, phone, availability)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING trainer_id, name, specialty, phone, availability;
+                """,
+                (
+                    trainer_id,
+                    trainer.name,
+                    trainer.specialty,
+                    trainer.phone,
+                    trainer.availability,
+                ),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    return Trainer(**row)
 
 
 @router.put("/{trainer_id}")
 def update_trainer(trainer_id: str, trainer_update: TrainerCreate):
-    for i, trainer in enumerate(trainers):
-        if trainer.trainer_id == trainer_id:
-            updated_trainer = Trainer(trainer_id=trainer_id, **trainer_update.dict())
-            trainers[i] = updated_trainer
-            return updated_trainer
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE trainers
+                SET name = %s,
+                    specialty = %s,
+                    phone = %s,
+                    availability = %s
+                WHERE trainer_id = %s
+                RETURNING trainer_id, name, specialty, phone, availability;
+                """,
+                (
+                    trainer_update.name,
+                    trainer_update.specialty,
+                    trainer_update.phone,
+                    trainer_update.availability,
+                    trainer_id,
+                ),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    if row:
+        return Trainer(**row)
     raise HTTPException(status_code=404, detail="Trainer not found")
 
 
 @router.delete("/{trainer_id}")
 def delete_trainer(trainer_id: str):
-    for i, trainer in enumerate(trainers):
-        if trainer.trainer_id == trainer_id:
-            del trainers[i]
-            return {"message": "Trainer deleted"}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM trainers WHERE trainer_id = %s RETURNING trainer_id;",
+                (trainer_id,),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    if row:
+        return {"message": "Trainer deleted"}
     raise HTTPException(status_code=404, detail="Trainer not found")

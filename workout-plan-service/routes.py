@@ -1,50 +1,113 @@
 from fastapi import APIRouter, HTTPException
 
+from db import get_conn
 from models import WorkoutPlan, WorkoutPlanCreate
 
 router = APIRouter()
 
-workout_plans: list[WorkoutPlan] = []
-_next_plan_id = 1
-
 
 @router.get("/")
 def list_workout_plans():
-    return {"items": workout_plans}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT plan_id, member_id, trainer_id, goal, duration_weeks, difficulty_level, notes
+                FROM workout_plans
+                ORDER BY plan_id;
+                """
+            )
+            rows = cur.fetchall()
+    return {"items": [WorkoutPlan(**row) for row in rows]}
 
 
 @router.get("/{plan_id}")
 def get_workout_plan(plan_id: int):
-    for plan in workout_plans:
-        if plan.plan_id == plan_id:
-            return plan
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT plan_id, member_id, trainer_id, goal, duration_weeks, difficulty_level, notes
+                FROM workout_plans
+                WHERE plan_id = %s;
+                """,
+                (plan_id,),
+            )
+            row = cur.fetchone()
+    if row:
+        return WorkoutPlan(**row)
     raise HTTPException(status_code=404, detail="Workout plan not found")
 
 
 @router.post("/")
 def create_workout_plan(workout_plan: WorkoutPlanCreate):
-    global _next_plan_id
-
-    new_plan = WorkoutPlan(plan_id=_next_plan_id, **workout_plan.model_dump())
-    _next_plan_id += 1
-    workout_plans.append(new_plan)
-    return new_plan
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO workout_plans (
+                    member_id, trainer_id, goal, duration_weeks, difficulty_level, notes
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING plan_id, member_id, trainer_id, goal, duration_weeks, difficulty_level, notes;
+                """,
+                (
+                    workout_plan.member_id,
+                    workout_plan.trainer_id,
+                    workout_plan.goal,
+                    workout_plan.duration_weeks,
+                    workout_plan.difficulty_level,
+                    workout_plan.notes,
+                ),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    return WorkoutPlan(**row)
 
 
 @router.put("/{plan_id}")
 def update_workout_plan(plan_id: int, workout_plan_update: WorkoutPlanCreate):
-    for i, plan in enumerate(workout_plans):
-        if plan.plan_id == plan_id:
-            updated_plan = WorkoutPlan(plan_id=plan_id, **workout_plan_update.model_dump())
-            workout_plans[i] = updated_plan
-            return updated_plan
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE workout_plans
+                SET member_id = %s,
+                    trainer_id = %s,
+                    goal = %s,
+                    duration_weeks = %s,
+                    difficulty_level = %s,
+                    notes = %s
+                WHERE plan_id = %s
+                RETURNING plan_id, member_id, trainer_id, goal, duration_weeks, difficulty_level, notes;
+                """,
+                (
+                    workout_plan_update.member_id,
+                    workout_plan_update.trainer_id,
+                    workout_plan_update.goal,
+                    workout_plan_update.duration_weeks,
+                    workout_plan_update.difficulty_level,
+                    workout_plan_update.notes,
+                    plan_id,
+                ),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    if row:
+        return WorkoutPlan(**row)
     raise HTTPException(status_code=404, detail="Workout plan not found")
 
 
 @router.delete("/{plan_id}")
 def delete_workout_plan(plan_id: int):
-    for i, plan in enumerate(workout_plans):
-        if plan.plan_id == plan_id:
-            del workout_plans[i]
-            return {"message": "Workout plan deleted"}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM workout_plans WHERE plan_id = %s RETURNING plan_id;",
+                (plan_id,),
+            )
+            row = cur.fetchone()
+        conn.commit()
+    if row:
+        return {"message": "Workout plan deleted"}
     raise HTTPException(status_code=404, detail="Workout plan not found")
