@@ -1,14 +1,27 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 
-class MemberBase(BaseModel):
-    email: str
-    full_name: str = Field(..., min_length=1)
+class Member(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    phone: str
+    membership_type: str
+    age: Optional[int] = None
 
 
-class MemberCreate(MemberBase):
-    pass
+class MemberCreate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str
+    membership_type: str
+    age: Optional[int] = None
 
 
-class Member(MemberBase):
-    id: str
+class MemberUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    membership_type: Optional[str] = None
+    age: Optional[int] = None
