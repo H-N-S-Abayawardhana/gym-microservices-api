@@ -1,5 +1,3 @@
-from typing import Optional
-
 import httpx
 from fastapi import FastAPI, Response
 from pydantic import BaseModel
@@ -12,7 +10,7 @@ app = FastAPI(title="API Gateway", version="1.0.0")
 
 class Attendance(BaseModel):
     member_id: int
-    trainer_id: Optional[int] = None
+    trainer_id: int
     session_type: str
     date: str
     check_in_time: str
@@ -40,7 +38,7 @@ async def forward_get_all():
 
 
 @app.get("/attendance/{attendance_id}")
-async def forward_get_one(attendance_id: int):
+async def forward_get_one(attendance_id: str):
     async with httpx.AsyncClient() as client:
         upstream = await client.get(f"{ATTENDANCE_SERVICE}/attendance/{attendance_id}")
     return _build_response(upstream)
@@ -56,7 +54,7 @@ async def forward_create(attendance: Attendance):
 
 
 @app.put("/attendance/{attendance_id}")
-async def forward_update(attendance_id: int, attendance: Attendance):
+async def forward_update(attendance_id: str, attendance: Attendance):
     async with httpx.AsyncClient() as client:
         upstream = await client.put(
             f"{ATTENDANCE_BASE}/{attendance_id}",
@@ -66,7 +64,7 @@ async def forward_update(attendance_id: int, attendance: Attendance):
 
 
 @app.delete("/attendance/{attendance_id}")
-async def forward_delete(attendance_id: int):
+async def forward_delete(attendance_id: str):
     async with httpx.AsyncClient() as client:
         upstream = await client.delete(f"{ATTENDANCE_BASE}/{attendance_id}")
     return _build_response(upstream)
