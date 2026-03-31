@@ -3,13 +3,9 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 
 from db import get_conn
-from models import Attendance, AttendanceCreate
+from models import Attendance, AttendanceCreate, AttendanceResponse
 
 router = APIRouter()
-
-# In-memory storage
-attendance_db: list[AttendanceResponse] = []
-attendance_counter: int = 1
 
 
 @router.get("/", response_model=list[AttendanceResponse])
@@ -24,10 +20,10 @@ def list_attendance():
                 """
             )
             rows = cur.fetchall()
-    return {"items": [Attendance(**row) for row in rows]}
+    return [Attendance(**row) for row in rows]
 
 
-@router.get("/{attendance_id}")
+@router.get("/{attendance_id}", response_model=AttendanceResponse)
 def get_attendance(attendance_id: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -42,10 +38,10 @@ def get_attendance(attendance_id: str):
             row = cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Attendance record not found")
-    return {"item": Attendance(**row)}
+    return Attendance(**row)
 
 
-@router.post("/")
+@router.post("/", response_model=AttendanceResponse)
 def create_attendance(payload: AttendanceCreate):
     attendance_id = str(uuid4())
     with get_conn() as conn:
@@ -60,10 +56,10 @@ def create_attendance(payload: AttendanceCreate):
             )
             row = cur.fetchone()
         conn.commit()
-    return {"item": Attendance(**row)}
+    return Attendance(**row)
 
 
-@router.put("/{attendance_id}")
+@router.put("/{attendance_id}", response_model=AttendanceResponse)
 def update_attendance(attendance_id: str, payload: AttendanceCreate):
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -80,7 +76,7 @@ def update_attendance(attendance_id: str, payload: AttendanceCreate):
         conn.commit()
     if not row:
         raise HTTPException(status_code=404, detail="Attendance record not found")
-    return {"item": Attendance(**row)}
+    return Attendance(**row)
 
 
 @router.delete("/{attendance_id}")
