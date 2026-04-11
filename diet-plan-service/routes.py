@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
@@ -9,15 +7,15 @@ router = APIRouter()
 
 
 class DietPlanCreate(BaseModel):
-    member_id: str
-    trainer_id: str
+    member_id: int
+    trainer_id: int
     goal: str = Field(..., min_length=1)
     meal_plan: str = Field(..., min_length=1)
     duration_weeks: int = Field(..., ge=0)
 
 
 class DietPlan(DietPlanCreate):
-    diet_plan_id: str
+    diet_plan_id: int
 
 
 @router.get("/")
@@ -36,7 +34,7 @@ def list_diet_plans() -> dict:
 
 
 @router.get("/{diet_plan_id}")
-def get_diet_plan(diet_plan_id: str) -> dict:
+def get_diet_plan(diet_plan_id: int) -> dict:
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -55,19 +53,17 @@ def get_diet_plan(diet_plan_id: str) -> dict:
 
 @router.post("/")
 def create_diet_plan(payload: DietPlanCreate) -> dict:
-    diet_plan_id = str(uuid4())
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 INSERT INTO diet_plans (
-                    diet_plan_id, member_id, trainer_id, goal, meal_plan, duration_weeks
+                    member_id, trainer_id, goal, meal_plan, duration_weeks
                 )
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s)
                 RETURNING diet_plan_id, member_id, trainer_id, goal, meal_plan, duration_weeks;
                 """,
                 (
-                    diet_plan_id,
                     payload.member_id,
                     payload.trainer_id,
                     payload.goal,
@@ -81,7 +77,7 @@ def create_diet_plan(payload: DietPlanCreate) -> dict:
 
 
 @router.put("/{diet_plan_id}")
-def update_diet_plan(diet_plan_id: str, payload: DietPlanCreate) -> dict:
+def update_diet_plan(diet_plan_id: int, payload: DietPlanCreate) -> dict:
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -112,7 +108,7 @@ def update_diet_plan(diet_plan_id: str, payload: DietPlanCreate) -> dict:
 
 
 @router.delete("/{diet_plan_id}")
-def delete_diet_plan(diet_plan_id: str) -> dict:
+def delete_diet_plan(diet_plan_id: int) -> dict:
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(

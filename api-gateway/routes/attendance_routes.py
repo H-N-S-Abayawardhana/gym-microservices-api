@@ -19,15 +19,15 @@ async def create_attendance(payload: AttendanceUpsertPayload, request: Request):
 
 
 @router.get("/{attendance_id}", include_in_schema=True)
-async def attendance_by_id(attendance_id: str, request: Request):
+async def attendance_by_id(attendance_id: int, request: Request):
     return await proxy_request(request, ATTENDANCE_SERVICE_URL, f"/attendance/{attendance_id}")
 
 
 @router.put("/{attendance_id}", include_in_schema=True)
-async def update_attendance(attendance_id: str, payload: AttendanceUpsertPayload, request: Request):
+async def update_attendance(attendance_id: int, payload: AttendanceUpsertPayload, request: Request):
     return await proxy_request(request, ATTENDANCE_SERVICE_URL, f"/attendance/{attendance_id}")
 
 
 @router.delete("/{attendance_id}", include_in_schema=True)
-async def delete_attendance(attendance_id: str, request: Request):
+async def delete_attendance(attendance_id: int, request: Request):
     return await proxy_request(request, ATTENDANCE_SERVICE_URL, f"/attendance/{attendance_id}")

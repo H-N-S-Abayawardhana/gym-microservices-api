@@ -19,15 +19,15 @@ async def create_diet_plan(payload: DietPlanUpsertPayload, request: Request):
 
 
 @router.get("/{diet_plan_id}", include_in_schema=True)
-async def diet_plan_by_id(diet_plan_id: str, request: Request):
+async def diet_plan_by_id(diet_plan_id: int, request: Request):
     return await proxy_request(request, DIET_SERVICE_URL, f"/diet-plans/{diet_plan_id}")
 
 
 @router.put("/{diet_plan_id}", include_in_schema=True)
-async def update_diet_plan(diet_plan_id: str, payload: DietPlanUpsertPayload, request: Request):
+async def update_diet_plan(diet_plan_id: int, payload: DietPlanUpsertPayload, request: Request):
     return await proxy_request(request, DIET_SERVICE_URL, f"/diet-plans/{diet_plan_id}")
 
 
 @router.delete("/{diet_plan_id}", include_in_schema=True)
-async def delete_diet_plan(diet_plan_id: str, request: Request):
+async def delete_diet_plan(diet_plan_id: int, request: Request):
     return await proxy_request(request, DIET_SERVICE_URL, f"/diet-plans/{diet_plan_id}")

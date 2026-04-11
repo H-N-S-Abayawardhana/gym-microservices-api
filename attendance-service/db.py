@@ -99,13 +99,51 @@ def _migrate_legacy_attendance(cur) -> None:
     cur.execute("ALTER TABLE attendance ALTER COLUMN status SET NOT NULL;")
 
 
+def _rebuild_attendance_integer_pk(cur) -> None:
+    cur.execute(
+        """
+        SELECT data_type FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'attendance'
+          AND column_name = 'id';
+        """
+    )
+    row = cur.fetchone()
+    if not row or row["data_type"] not in ("text", "character varying"):
+        return
+    _migrate_legacy_attendance(cur)
+    cur.execute("DROP TABLE IF EXISTS attendance_new CASCADE;")
+    cur.execute(
+        """
+        CREATE TABLE attendance_new (
+            id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+            member_id INTEGER NOT NULL,
+            trainer_id INTEGER NOT NULL,
+            session_type TEXT NOT NULL,
+            "date" TEXT NOT NULL,
+            check_in_time TEXT NOT NULL,
+            status TEXT NOT NULL
+        );
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO attendance_new (member_id, trainer_id, session_type, "date", check_in_time, status)
+        SELECT member_id, trainer_id, session_type, "date", check_in_time, status
+        FROM attendance;
+        """
+    )
+    cur.execute("DROP TABLE attendance CASCADE;")
+    cur.execute("ALTER TABLE attendance_new RENAME TO attendance;")
+
+
 def init_db() -> None:
     with get_conn() as conn:
         with conn.cursor() as cur:
+            _rebuild_attendance_integer_pk(cur)
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS attendance (
-                    id TEXT PRIMARY KEY,
+                    id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
                     member_id INTEGER NOT NULL,
                     trainer_id INTEGER NOT NULL,
                     session_type TEXT NOT NULL,
