@@ -55,8 +55,8 @@ class BookingUpdatePayload(BaseModel):
 
 
 class DietPlanUpsertPayload(BaseModel):
-    member_id: str
-    trainer_id: str
+    member_id: int
+    trainer_id: int
     goal: str = Field(..., min_length=1)
     meal_plan: str = Field(..., min_length=1)
     duration_weeks: int = Field(..., ge=0)
