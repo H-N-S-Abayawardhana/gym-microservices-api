@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-import uuid
+
 from db import get_conn
 from models import Trainer, TrainerCreate
 
@@ -22,7 +22,7 @@ def list_trainers():
 
 
 @router.get("/{trainer_id}")
-def get_trainer(trainer_id: str):
+def get_trainer(trainer_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -41,17 +41,15 @@ def get_trainer(trainer_id: str):
 
 @router.post("/")
 def create_trainer(trainer: TrainerCreate):
-    trainer_id = str(uuid.uuid4())
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO trainers (trainer_id, name, specialty, phone, availability)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO trainers (name, specialty, phone, availability)
+                VALUES (%s, %s, %s, %s)
                 RETURNING trainer_id, name, specialty, phone, availability;
                 """,
                 (
-                    trainer_id,
                     trainer.name,
                     trainer.specialty,
                     trainer.phone,
@@ -64,7 +62,7 @@ def create_trainer(trainer: TrainerCreate):
 
 
 @router.put("/{trainer_id}")
-def update_trainer(trainer_id: str, trainer_update: TrainerCreate):
+def update_trainer(trainer_id: int, trainer_update: TrainerCreate):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -93,7 +91,7 @@ def update_trainer(trainer_id: str, trainer_update: TrainerCreate):
 
 
 @router.delete("/{trainer_id}")
-def delete_trainer(trainer_id: str):
+def delete_trainer(trainer_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
