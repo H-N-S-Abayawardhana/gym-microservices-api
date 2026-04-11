@@ -38,7 +38,7 @@ async def forward_get_all():
 
 
 @app.get("/attendance/{attendance_id}")
-async def forward_get_one(attendance_id: str):
+async def forward_get_one(attendance_id: int):
     async with httpx.AsyncClient() as client:
         upstream = await client.get(f"{ATTENDANCE_SERVICE}/attendance/{attendance_id}")
     return _build_response(upstream)
@@ -54,7 +54,7 @@ async def forward_create(attendance: Attendance):
 
 
 @app.put("/attendance/{attendance_id}")
-async def forward_update(attendance_id: str, attendance: Attendance):
+async def forward_update(attendance_id: int, attendance: Attendance):
     async with httpx.AsyncClient() as client:
         upstream = await client.put(
             f"{ATTENDANCE_BASE}/{attendance_id}",
@@ -64,7 +64,7 @@ async def forward_update(attendance_id: str, attendance: Attendance):
 
 
 @app.delete("/attendance/{attendance_id}")
-async def forward_delete(attendance_id: str):
+async def forward_delete(attendance_id: int):
     async with httpx.AsyncClient() as client:
         upstream = await client.delete(f"{ATTENDANCE_BASE}/{attendance_id}")
     return _build_response(upstream)
