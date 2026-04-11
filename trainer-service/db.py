@@ -25,8 +25,18 @@ def init_db() -> None:
         with conn.cursor() as cur:
             cur.execute(
                 """
+                SELECT data_type FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'trainers'
+                  AND column_name = 'trainer_id';
+                """
+            )
+            row = cur.fetchone()
+            if row and row["data_type"] in ("text", "character varying"):
+                cur.execute("DROP TABLE IF EXISTS trainers CASCADE;")
+            cur.execute(
+                """
                 CREATE TABLE IF NOT EXISTS trainers (
-                    trainer_id TEXT PRIMARY KEY,
+                    trainer_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
                     name TEXT NOT NULL,
                     specialty TEXT NOT NULL,
                     phone TEXT NOT NULL,

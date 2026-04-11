@@ -13,4 +13,4 @@ class TrainerCreate(TrainerBase):
 
 
 class Trainer(TrainerBase):
-    trainer_id: str
+    trainer_id: int
