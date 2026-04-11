@@ -19,15 +19,15 @@ async def create_trainer(payload: TrainerUpsertPayload, request: Request):
 
 
 @router.get("/{trainer_id}", include_in_schema=True)
-async def trainer_by_id(trainer_id: str, request: Request):
+async def trainer_by_id(trainer_id: int, request: Request):
     return await proxy_request(request, TRAINER_SERVICE_URL, f"/trainers/{trainer_id}")
 
 
 @router.put("/{trainer_id}", include_in_schema=True)
-async def update_trainer(trainer_id: str, payload: TrainerUpsertPayload, request: Request):
+async def update_trainer(trainer_id: int, payload: TrainerUpsertPayload, request: Request):
     return await proxy_request(request, TRAINER_SERVICE_URL, f"/trainers/{trainer_id}")
 
 
 @router.delete("/{trainer_id}", include_in_schema=True)
-async def delete_trainer(trainer_id: str, request: Request):
+async def delete_trainer(trainer_id: int, request: Request):
     return await proxy_request(request, TRAINER_SERVICE_URL, f"/trainers/{trainer_id}")
