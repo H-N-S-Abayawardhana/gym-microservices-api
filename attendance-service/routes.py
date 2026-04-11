@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from fastapi import APIRouter, HTTPException
 
 from db import get_conn
@@ -23,7 +21,7 @@ def list_attendance():
 
 
 @router.get("/{attendance_id}", response_model=AttendanceResponse)
-def get_attendance(attendance_id: str):
+def get_attendance(attendance_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -38,19 +36,17 @@ def get_attendance(attendance_id: str):
 
 @router.post("/", response_model=AttendanceResponse)
 def create_attendance(payload: AttendanceCreate):
-    attendance_id = str(uuid4())
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 INSERT INTO attendance (
-                    id, member_id, trainer_id, session_type, "date", check_in_time, status
+                    member_id, trainer_id, session_type, "date", check_in_time, status
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id, member_id, trainer_id, session_type, "date", check_in_time, status;
                 """,
                 (
-                    attendance_id,
                     payload.member_id,
                     payload.trainer_id,
                     payload.session_type,
@@ -65,7 +61,7 @@ def create_attendance(payload: AttendanceCreate):
 
 
 @router.put("/{attendance_id}", response_model=AttendanceResponse)
-def update_attendance(attendance_id: str, payload: AttendanceCreate):
+def update_attendance(attendance_id: int, payload: AttendanceCreate):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -98,7 +94,7 @@ def update_attendance(attendance_id: str, payload: AttendanceCreate):
 
 
 @router.delete("/{attendance_id}")
-def delete_attendance(attendance_id: str):
+def delete_attendance(attendance_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -124,7 +120,7 @@ def _row_to_attendance(row: dict) -> Attendance:
         if len(t) >= 8 and t[2] == ":" and t[5] == ":":
             t = t[:5]
     return Attendance(
-        id=str(row["id"]),
+        id=int(row["id"]),
         member_id=int(row["member_id"]),
         trainer_id=int(row["trainer_id"]),
         session_type=str(row["session_type"]),
